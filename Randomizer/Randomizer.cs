@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Randomizer.Cache;
 using Randomizer.Generators;
 
 namespace Randomizer
@@ -33,16 +34,16 @@ namespace Randomizer
 		{
 			T result = (T)Activator.CreateInstance(type);
 
-			return (T)FillRandom(result, settings, 0);
+			return (T)GenerateRandom(result, settings, 0);
 		}
 
-		private static object FillRandom(object random, ISettings settings, int currentDepth)
+		private static object GenerateRandom(object random, ISettings settings, int currentDepth)
 		{
 			if (currentDepth > settings.MaxDepth)
 				return random;
 
 			//loop through all public properties and randomize values
-			List<PropertyInfo> properties = random.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
+			PropertyInfo[] properties = TypeCache.GetMembers(random.GetType());
 			foreach (PropertyInfo propertyInfo in properties)
 			{
 				IGenerator generator = GeneratorFactory.Create(propertyInfo.PropertyType, settings);
@@ -51,11 +52,11 @@ namespace Randomizer
 				object val = generator.Create();
 				propertyInfo.SetValue(random, val, null);
 				currentDepth++;
-				if ( currentDepth > settings.MaxDepth)
+				if ( currentDepth > settings.MaxDepth) //break out of recursion if needed
 					return random;
 				foreach (object o in generator.AdditionalObjectsToRandomize)
 				{
-					FillRandom(o, settings, currentDepth + 1);
+					GenerateRandom(o, settings, currentDepth + 1);
 				}
 				currentDepth--;
 			}

@@ -8,41 +8,53 @@ namespace Randomizer
 {
 	internal static class GeneratorFactory
 	{
+		private static readonly Dictionary<string, IGenerator> _generatorCache = new Dictionary<string, IGenerator>();
+
 		internal static IGenerator Create(Type type, ISettings settings)
 		{
-			if ( type == typeof(int))
-				return new IntGenerator(settings);
+			string cacheKey = type.ToString();
+			if (_generatorCache.ContainsKey(cacheKey))
+				return _generatorCache[cacheKey];
+
+			if (type == typeof(int))
+				return CacheGenerator(cacheKey, new IntGenerator(settings));
 			if ( type == typeof(int?))
-				return new NullableIntGenerator(settings);
+				return CacheGenerator(cacheKey, new NullableIntGenerator(settings));
 			if ( type == typeof(string))
-				return new StringGenerator(settings);
+				return CacheGenerator(cacheKey, new StringGenerator(settings));
 			if ( type == typeof(char))
-				return new CharGenerator(settings);
+				return CacheGenerator(cacheKey, new CharGenerator(settings));
 			if (type == typeof(char?))
-				return new NullableCharGenerator(settings);
+				return CacheGenerator(cacheKey, new NullableCharGenerator(settings));
 			if ( type == typeof(Guid))
-				return new GuidGenerator(settings);
+				return CacheGenerator(cacheKey, new GuidGenerator(settings));
 			if (type == typeof(Guid?))
-				return new NullableGuidGenerator(settings);
+				return CacheGenerator(cacheKey, new NullableGuidGenerator(settings));
 			if ( type == typeof(long))
-				return new LongGenerator(settings);
+				return CacheGenerator(cacheKey, new LongGenerator(settings));
 			if ( type == typeof(long?))
-				return new NullableLongGenerator(settings);
+				return CacheGenerator(cacheKey, new NullableLongGenerator(settings));
 			if ( IsCollection(type) )
 			{
 				CollectionGenerator generator = new CollectionGenerator(settings);
 				generator.CollectionType = type;
 				generator.CollectionItemType = GetEnumerableType(type);
-				return generator;
+				return CacheGenerator(cacheKey, generator);
 			}
 			if (type.IsClass && type != typeof(string))
 			{
 				InstanceGenerator generator = new InstanceGenerator(settings);
 				generator.InstanceType = type;
-				return generator;
+				return CacheGenerator(cacheKey, generator);
 			}
 
 			return null;
+		}
+
+		private static IGenerator CacheGenerator(string cacheKey, IGenerator generator)
+		{
+			_generatorCache[cacheKey] = generator;
+			return generator;
 		}
 
 		private static bool IsCollection(Type type)

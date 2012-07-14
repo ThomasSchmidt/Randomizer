@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
+using Randomizer.Generators;
 
 namespace Randomizer.Tests
 {
@@ -37,6 +39,33 @@ namespace Randomizer.Tests
 			//Assert.That(actual.NullableGuidProperty1, Is.Null);
 			//Assert.That(actual.NullableIntProperty1, Is.Null);
 			//Assert.That(actual.NullableLongProperty1, Is.Null);
+		}
+
+		[Test]
+		public void RandomizerPerformanceTest()
+		{
+			//arrange
+			Randomizer.Randomize<TestDummy>(); //warmup
+			const int loopCount = 10;
+			long total = 0, avg = 0L;
+			for (int i = 0; i < loopCount; i++)
+			{
+				long result = Time(() => Randomizer.Randomize<TestDummy>());
+				total += result;
+			}
+			avg = total/loopCount;
+
+			//assert
+			Assert.That(total, Is.LessThan(100), "It took longer than 100ms to run the test");
+			Assert.That(avg, Is.LessThan(10));
+		}
+
+		private long Time(Action action)
+		{
+			Stopwatch w = Stopwatch.StartNew();
+			action();
+			w.Stop();
+			return w.ElapsedMilliseconds;
 		}
 	}
 }
